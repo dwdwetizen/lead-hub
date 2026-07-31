@@ -1,5 +1,17 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { Building2, Mail, MapPin, MessageCircle, Pencil, Phone, Save, User, X } from "lucide-react";
+import {
+  Building2,
+  Globe2,
+  Instagram,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Pencil,
+  Phone,
+  Save,
+  User,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { Lead } from "@/types/lead";
 import { ResponsiveBottomSheet } from "@/components/shared/ResponsiveBottomSheet";
@@ -23,6 +35,12 @@ interface LeadForm {
   contato: string;
   decisor: string;
   email: string;
+  site: string;
+  instagram: string;
+  avaliacaoGoogle: string;
+  totalAvaliacoes: string;
+  totalFotos: string;
+  posicionamentoGoogle: string;
   responsavel: string;
   valorEstimado: string;
   proximaAcao: string;
@@ -40,6 +58,12 @@ const emptyForm: LeadForm = {
   contato: "",
   decisor: "",
   email: "",
+  site: "",
+  instagram: "",
+  avaliacaoGoogle: "",
+  totalAvaliacoes: "",
+  totalFotos: "",
+  posicionamentoGoogle: "",
   responsavel: "",
   valorEstimado: "",
   proximaAcao: "",
@@ -59,6 +83,13 @@ function toDateTimeLocal(value?: string) {
   )}:${pad(date.getMinutes())}`;
 }
 
+function toOptionalNumber(value: string) {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return undefined;
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : undefined;
+}
+
 function toForm(lead: Lead): LeadForm {
   return {
     empresa: lead.empresa,
@@ -70,6 +101,12 @@ function toForm(lead: Lead): LeadForm {
     contato: lead.contato,
     decisor: lead.decisor,
     email: lead.email,
+    site: lead.site ?? "",
+    instagram: lead.instagram ?? "",
+    avaliacaoGoogle: lead.avaliacaoGoogle?.toString() ?? "",
+    totalAvaliacoes: lead.totalAvaliacoes?.toString() ?? "",
+    totalFotos: lead.totalFotos?.toString() ?? "",
+    posicionamentoGoogle: lead.posicionamentoGoogle?.toString() ?? "",
     responsavel: lead.responsavel,
     valorEstimado: String(lead.valorEstimado || ""),
     proximaAcao: toDateTimeLocal(lead.proximaAcao),
@@ -131,6 +168,12 @@ export function LeadDetailsPanel({
         contato: form.contato.trim(),
         decisor: form.decisor.trim(),
         email: form.email.trim(),
+        site: form.site.trim() || undefined,
+        instagram: form.instagram.trim() || undefined,
+        avaliacaoGoogle: toOptionalNumber(form.avaliacaoGoogle),
+        totalAvaliacoes: toOptionalNumber(form.totalAvaliacoes),
+        totalFotos: toOptionalNumber(form.totalFotos),
+        posicionamentoGoogle: toOptionalNumber(form.posicionamentoGoogle),
         responsavel: form.responsavel.trim(),
         valorEstimado: Number(form.valorEstimado.replace(",", ".")) || 0,
         proximaAcao: form.proximaAcao ? new Date(form.proximaAcao).toISOString() : undefined,
@@ -277,6 +320,59 @@ function LeadEditForm({
         </div>
       </Secao>
 
+      <Secao titulo="Presença online">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Campo
+            id="lead-site"
+            label="Site"
+            value={form.site}
+            onChange={(value) => onChange("site", value)}
+            placeholder="https://empresa.com.br"
+          />
+          <Campo
+            id="lead-instagram"
+            label="Instagram"
+            value={form.instagram}
+            onChange={(value) => onChange("instagram", value)}
+            placeholder="@empresa"
+          />
+          <Campo
+            id="lead-avaliacao-google"
+            label="Nota no Google"
+            type="number"
+            min="0"
+            max="5"
+            step="0.1"
+            value={form.avaliacaoGoogle}
+            onChange={(value) => onChange("avaliacaoGoogle", value)}
+          />
+          <Campo
+            id="lead-total-avaliacoes"
+            label="Quantidade de avaliações"
+            type="number"
+            min="0"
+            value={form.totalAvaliacoes}
+            onChange={(value) => onChange("totalAvaliacoes", value)}
+          />
+          <Campo
+            id="lead-total-fotos"
+            label="Quantidade de fotos"
+            type="number"
+            min="0"
+            value={form.totalFotos}
+            onChange={(value) => onChange("totalFotos", value)}
+          />
+          <Campo
+            id="lead-posicionamento-google"
+            label="Posição no mapa"
+            type="number"
+            min="1"
+            value={form.posicionamentoGoogle}
+            onChange={(value) => onChange("posicionamentoGoogle", value)}
+          />
+        </div>
+      </Secao>
+
       <Secao titulo="Próxima ação">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Campo
@@ -387,6 +483,8 @@ function LeadDetails({ lead }: { lead: Lead }) {
         <Linha icon={Phone} label="Telefone" value={lead.telefone || "—"} />
         <Linha icon={MessageCircle} label="WhatsApp" value={lead.whatsapp || "—"} />
         <Linha icon={Mail} label="E-mail" value={lead.email || "—"} />
+        {lead.site && <Linha icon={Globe2} label="Site" value={lead.site} />}
+        {lead.instagram && <Linha icon={Instagram} label="Instagram" value={lead.instagram} />}
       </Secao>
 
       <Secao titulo="Decisor e responsável">
