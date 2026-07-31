@@ -62,6 +62,13 @@ export interface Lead {
   contato: string;
   decisor: string;
   email: string;
+  site?: string;
+  instagram?: string;
+  googleMapsUrl?: string;
+  avaliacaoGoogle?: number;
+  totalAvaliacoes?: number;
+  totalFotos?: number;
+  posicionamentoGoogle?: number;
   observacoes: string;
   origem: Origem;
   modulo: Modulo;
@@ -89,3 +96,4 @@ export interface Colaborador {
 }
 
 export type Perfil = "gestao" | "colaborador";
+
