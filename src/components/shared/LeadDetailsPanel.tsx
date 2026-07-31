@@ -219,6 +219,7 @@ export function LeadDetailsPanel({
       {editing ? (
         <LeadEditForm
           form={form}
+          online={currentLead.origem === "online"}
           saving={saving}
           onChange={updateField}
           onCancel={cancelEditing}
@@ -233,12 +234,14 @@ export function LeadDetailsPanel({
 
 function LeadEditForm({
   form,
+  online,
   saving,
   onChange,
   onCancel,
   onSubmit,
 }: {
   form: LeadForm;
+  online: boolean;
   saving: boolean;
   onChange: (field: keyof LeadForm, value: string) => void;
   onCancel: () => void;
@@ -320,58 +323,60 @@ function LeadEditForm({
         </div>
       </Secao>
 
-      <Secao titulo="Presença online">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Campo
-            id="lead-site"
-            label="Site"
-            value={form.site}
-            onChange={(value) => onChange("site", value)}
-            placeholder="https://empresa.com.br"
-          />
-          <Campo
-            id="lead-instagram"
-            label="Instagram"
-            value={form.instagram}
-            onChange={(value) => onChange("instagram", value)}
-            placeholder="@empresa"
-          />
-          <Campo
-            id="lead-avaliacao-google"
-            label="Nota no Google"
-            type="number"
-            min="0"
-            max="5"
-            step="0.1"
-            value={form.avaliacaoGoogle}
-            onChange={(value) => onChange("avaliacaoGoogle", value)}
-          />
-          <Campo
-            id="lead-total-avaliacoes"
-            label="Quantidade de avaliações"
-            type="number"
-            min="0"
-            value={form.totalAvaliacoes}
-            onChange={(value) => onChange("totalAvaliacoes", value)}
-          />
-          <Campo
-            id="lead-total-fotos"
-            label="Quantidade de fotos"
-            type="number"
-            min="0"
-            value={form.totalFotos}
-            onChange={(value) => onChange("totalFotos", value)}
-          />
-          <Campo
-            id="lead-posicionamento-google"
-            label="Posição no mapa"
-            type="number"
-            min="1"
-            value={form.posicionamentoGoogle}
-            onChange={(value) => onChange("posicionamentoGoogle", value)}
-          />
-        </div>
-      </Secao>
+      {online && (
+        <Secao titulo="Presença online">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Campo
+              id="lead-site"
+              label="Site"
+              value={form.site}
+              onChange={(value) => onChange("site", value)}
+              placeholder="https://empresa.com.br"
+            />
+            <Campo
+              id="lead-instagram"
+              label="Instagram"
+              value={form.instagram}
+              onChange={(value) => onChange("instagram", value)}
+              placeholder="@empresa"
+            />
+            <Campo
+              id="lead-avaliacao-google"
+              label="Nota no Google"
+              type="number"
+              min="0"
+              max="5"
+              step="0.1"
+              value={form.avaliacaoGoogle}
+              onChange={(value) => onChange("avaliacaoGoogle", value)}
+            />
+            <Campo
+              id="lead-total-avaliacoes"
+              label="Quantidade de avaliações"
+              type="number"
+              min="0"
+              value={form.totalAvaliacoes}
+              onChange={(value) => onChange("totalAvaliacoes", value)}
+            />
+            <Campo
+              id="lead-total-fotos"
+              label="Quantidade de fotos"
+              type="number"
+              min="0"
+              value={form.totalFotos}
+              onChange={(value) => onChange("totalFotos", value)}
+            />
+            <Campo
+              id="lead-posicionamento-google"
+              label="Posição no mapa"
+              type="number"
+              min="1"
+              value={form.posicionamentoGoogle}
+              onChange={(value) => onChange("posicionamentoGoogle", value)}
+            />
+          </div>
+        </Secao>
+      )}
 
       <Secao titulo="Próxima ação">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -483,8 +488,12 @@ function LeadDetails({ lead }: { lead: Lead }) {
         <Linha icon={Phone} label="Telefone" value={lead.telefone || "—"} />
         <Linha icon={MessageCircle} label="WhatsApp" value={lead.whatsapp || "—"} />
         <Linha icon={Mail} label="E-mail" value={lead.email || "—"} />
-        {lead.site && <Linha icon={Globe2} label="Site" value={lead.site} />}
-        {lead.instagram && <Linha icon={Instagram} label="Instagram" value={lead.instagram} />}
+        {lead.origem === "online" && lead.site && (
+          <Linha icon={Globe2} label="Site" value={lead.site} />
+        )}
+        {lead.origem === "online" && lead.instagram && (
+          <Linha icon={Instagram} label="Instagram" value={lead.instagram} />
+        )}
       </Secao>
 
       <Secao titulo="Decisor e responsável">
