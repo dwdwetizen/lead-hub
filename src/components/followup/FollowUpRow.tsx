@@ -2,6 +2,7 @@ import { AudioLines, CalendarPlus, MessageCircle, Phone, RotateCcw } from "lucid
 import type { Lead } from "@/types/lead";
 import { UrgencyBadge } from "@/components/shared/UrgencyBadge";
 import { OriginBadge } from "@/components/shared/StatusBadge";
+import { ArchiveConfirmation } from "@/components/shared/ArchiveConfirmation";
 import { formatDateTime } from "@/lib/date-utils";
 
 export function FollowUpRow({
@@ -15,7 +16,7 @@ export function FollowUpRow({
   lead: Lead;
   ativo?: boolean;
   onOpen: (lead: Lead) => void;
-  onRegistrarContato: (lead: Lead) => void;
+  onRegistrarContato: (lead: Lead, nota: string) => void;
   onRetornar: React.ReactNode;
   onReuniao: (lead: Lead) => void;
 }) {
@@ -58,20 +59,32 @@ export function FollowUpRow({
             <span className="text-[11px] font-medium tabular-nums">
               {formatDateTime(lead.proximaAcao)}
             </span>
-            <span className="text-[11px] text-muted-foreground">{lead.proximaAcaoLabel ?? "—"}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {lead.proximaAcaoLabel ?? "—"}
+            </span>
           </div>
           <UrgencyBadge date={lead.proximaAcao} compact />
         </div>
       </button>
 
       <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">
-        <button
-          type="button"
-          onClick={() => onRegistrarContato(lead)}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-surface px-2.5 text-[12px] font-medium hover:bg-secondary"
-        >
-          <Phone className="size-3.5" /> Registrar contato
-        </button>
+        <ArchiveConfirmation
+          title="Registrar contato?"
+          description="Adicione uma anotação sobre o que foi conversado."
+          confirmLabel="Registrar contato"
+          withNote
+          noteRequired
+          notePlaceholder="Resumo do contato"
+          onConfirm={(nota) => onRegistrarContato(lead, nota!)}
+          trigger={
+            <button
+              type="button"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-surface px-2.5 text-[12px] font-medium hover:bg-secondary"
+            >
+              <Phone className="size-3.5" /> Registrar contato
+            </button>
+          }
+        />
         {onRetornar}
         <button
           type="button"
@@ -92,3 +105,4 @@ export function RetornarButtonLabel() {
     </>
   );
 }
+
