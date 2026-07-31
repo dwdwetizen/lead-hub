@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CrmRouteImport } from './routes/crm'
+import { Route as FollowUpRouteImport } from './routes/follow-up'
+import { Route as ProspeccaoRouteImport } from './routes/prospeccao'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CrmRoute = CrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FollowUpRoute = FollowUpRouteImport.update({
+  id: '/follow-up',
+  path: '/follow-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProspeccaoRoute = ProspeccaoRouteImport.update({
+  id: '/prospeccao',
+  path: '/prospeccao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/crm': typeof CrmRoute
+  '/follow-up': typeof FollowUpRoute
+  '/prospeccao': typeof ProspeccaoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/crm': typeof CrmRoute
+  '/follow-up': typeof FollowUpRoute
+  '/prospeccao': typeof ProspeccaoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/crm': typeof CrmRoute
+  '/follow-up': typeof FollowUpRoute
+  '/prospeccao': typeof ProspeccaoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/crm' | '/follow-up' | '/prospeccao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/crm' | '/follow-up' | '/prospeccao'
+  id: '__root__' | '/' | '/crm' | '/follow-up' | '/prospeccao'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CrmRoute: typeof CrmRoute
+  FollowUpRoute: typeof FollowUpRoute
+  ProspeccaoRoute: typeof ProspeccaoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +78,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/crm': {
+      id: '/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof CrmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/follow-up': {
+      id: '/follow-up'
+      path: '/follow-up'
+      fullPath: '/follow-up'
+      preLoaderRoute: typeof FollowUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prospeccao': {
+      id: '/prospeccao'
+      path: '/prospeccao'
+      fullPath: '/prospeccao'
+      preLoaderRoute: typeof ProspeccaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CrmRoute: CrmRoute,
+  FollowUpRoute: FollowUpRoute,
+  ProspeccaoRoute: ProspeccaoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
