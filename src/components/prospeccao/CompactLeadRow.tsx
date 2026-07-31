@@ -91,7 +91,13 @@ export function CompactLeadRow({
 
       <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2 sm:pl-8">
         {onNaoAtendeu && (
-          <Acao icon={PhoneOff} label="Não atendeu" onClick={() => onNaoAtendeu(lead)} />
+          <button
+            type="button"
+            onClick={() => onNaoAtendeu(lead)}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-[12px] font-medium transition-colors hover:bg-secondary"
+          >
+            <PhoneOff className="size-3.5" /> Não atendeu
+          </button>
         )}
         {onRetornar && (
           <ReturnDatePopover
