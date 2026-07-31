@@ -1,9 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import {
-  BarChart3,
-  Flame,
-  LayoutDashboard,
   Menu,
   PhoneCall,
   Search,
@@ -17,12 +14,9 @@ import { setPerfil, usePerfil, usuario } from "@/services/leadService";
 import { Button } from "@/components/ui/button";
 
 const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/prospeccao", label: "Prospecção", icon: Target },
   { to: "/follow-up", label: "Follow-up", icon: PhoneCall },
   { to: "/crm", label: "CRM", icon: Users },
-  { to: "/mapa-de-calor", label: "Mapa de Calor", icon: Flame },
-  { to: "/volume-de-busca", label: "Volume de Busca", icon: BarChart3 },
 ];
 
 export function AppShell({
