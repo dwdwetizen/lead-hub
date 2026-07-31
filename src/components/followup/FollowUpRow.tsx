@@ -1,4 +1,12 @@
-import { CalendarPlus, MessageCircle, Phone, RotateCcw } from "lucide-react";
+import {
+  Archive,
+  CalendarPlus,
+  MessageCircle,
+  Phone,
+  PhoneOff,
+  RotateCcw,
+  ThumbsDown,
+} from "lucide-react";
 import type { Lead } from "@/types/lead";
 import { UrgencyBadge } from "@/components/shared/UrgencyBadge";
 import { OriginBadge } from "@/components/shared/StatusBadge";
@@ -9,16 +17,22 @@ export function FollowUpRow({
   lead,
   ativo,
   onOpen,
-  onRegistrarContato,
+  onNaoAtendeu,
   onRetornar,
+  onAdicionarFollowUp,
   onReuniao,
+  onSemInteresse,
+  onArquivar,
 }: {
   lead: Lead;
   ativo?: boolean;
   onOpen: (lead: Lead) => void;
-  onRegistrarContato: (lead: Lead, nota: string) => void;
+  onNaoAtendeu: (lead: Lead) => void;
   onRetornar: React.ReactNode;
+  onAdicionarFollowUp: React.ReactNode;
   onReuniao: (lead: Lead) => void;
+  onSemInteresse: (lead: Lead, nota?: string) => void;
+  onArquivar: (lead: Lead) => void;
 }) {
   return (
     <div
@@ -63,30 +77,79 @@ export function FollowUpRow({
       </button>
 
       <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2">
-        <ArchiveConfirmation
-          title="Registrar contato?"
-          description="Adicione uma anotação sobre o que foi conversado."
-          confirmLabel="Registrar contato"
-          withNote
-          noteRequired
-          notePlaceholder="Resumo do contato"
-          onConfirm={(nota) => onRegistrarContato(lead, nota!)}
-          trigger={
-            <button
-              type="button"
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-surface px-2.5 text-[12px] font-medium hover:bg-secondary"
-            >
-              <Phone className="size-3.5" /> Registrar contato
-            </button>
-          }
-        />
+        {lead.telefone && (
+          <a
+            href={`tel:${lead.telefone.replace(/[^\d+]/g, "")}`}
+            aria-label={`Ligar para ${lead.empresa}`}
+            title="Ligar"
+            className="inline-flex size-9 items-center justify-center rounded-md border bg-surface text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <Phone className="size-3.5" />
+          </a>
+        )}
+        {lead.whatsapp && (
+          <a
+            href={whatsappUrl(lead.whatsapp)}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Abrir WhatsApp de ${lead.empresa}`}
+            title="Abrir WhatsApp"
+            className="inline-flex size-9 items-center justify-center rounded-md border border-success/30 bg-success/8 text-success transition-colors hover:bg-success/15"
+          >
+            <MessageCircle className="size-3.5" />
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={() => onNaoAtendeu(lead)}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-surface px-2.5 text-[12px] font-medium hover:bg-secondary"
+        >
+          <PhoneOff className="size-3.5" /> Não atendeu
+        </button>
         {onRetornar}
+        {onAdicionarFollowUp}
         <button
           type="button"
           onClick={() => onReuniao(lead)}
           className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/8 px-2.5 text-[12px] font-medium text-primary hover:bg-primary/15"
         >
           <CalendarPlus className="size-3.5" /> Reunião marcada
+        </button>
+        <ArchiveConfirmation
+          title="Registrar sem interesse?"
+          description="O resultado ficará salvo no histórico do lead."
+          confirmLabel="Registrar"
+          withNote
+          onConfirm={(nota) => onSemInteresse(lead, nota)}
+          trigger={
+            <button
+              type="button"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-surface px-2.5 text-[12px] font-medium hover:bg-secondary"
+            >
+              <ThumbsDown className="size-3.5" /> Sem interesse
+            </button>
+          }
+        />
+        <ArchiveConfirmation
+          title="Arquivar este lead?"
+          description="Ele poderá ser restaurado na aba Arquivados."
+          confirmLabel="Arquivar"
+          onConfirm={() => onArquivar(lead)}
+          trigger={
+            <button
+              type="button"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-surface px-2.5 text-[12px] font-medium text-muted-foreground hover:bg-secondary"
+            >
+              <Archive className="size-3.5" /> Arquivar
+            </button>
+          }
+        />
+        <button
+          type="button"
+          onClick={() => onOpen(lead)}
+          className="ml-auto inline-flex min-h-9 items-center rounded-md px-2.5 text-[12px] font-medium text-primary hover:bg-primary/8"
+        >
+          Ver detalhes
         </button>
       </div>
     </div>
@@ -99,5 +162,11 @@ export function RetornarButtonLabel() {
       <RotateCcw className="size-3.5" /> Retornar novamente
     </>
   );
+}
+
+function whatsappUrl(value: string) {
+  let digits = value.replace(/\D/g, "");
+  if (digits.length === 10 || digits.length === 11) digits = `55${digits}`;
+  return `https://wa.me/${digits}`;
 }
 
