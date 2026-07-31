@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import type { Lead } from "@/types/lead";
 import {
   agendarRetorno,
+  agendarNovaTentativa,
   arquivarLead,
   criarLead,
   gerarLeadsOnline,
@@ -110,8 +111,12 @@ function ProspeccaoPage() {
       toast.success("Nova tentativa agendada para amanhã", { description: lead.empresa });
     },
     onRetornar: async (lead: Lead, data: string, obs?: string) => {
+      await agendarNovaTentativa(lead.id, data, obs);
+      toast.success("Retorno agendado na Prospecção", { description: lead.empresa });
+    },
+    onAdicionarFollowUp: async (lead: Lead, data: string, obs?: string) => {
       await agendarRetorno(lead.id, data, obs);
-      toast.success("Retorno agendado — lead enviado ao Follow-up", { description: lead.empresa });
+      toast.success("Lead adicionado ao Follow-up", { description: lead.empresa });
     },
     onSemInteresse: async (lead: Lead, obs?: string) => {
       await registrarSemInteresse(lead.id, obs);
