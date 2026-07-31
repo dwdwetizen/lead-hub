@@ -214,7 +214,44 @@ export interface NovoLeadInput {
   contato: string;
   decisor: string;
   email: string;
+  googleMapsUrl?: string;
   observacoes: string;
+}
+
+export interface EmpresaMapsResult {
+  placeId: string;
+  empresa: string;
+  endereco: string;
+  cidade: string;
+  telefone?: string;
+  avaliacao?: number;
+  googleMapsUrl: string;
+}
+
+/** Busca simulada com a mesma assinatura esperada para a Google Places API. */
+export async function buscarEmpresasNoMaps(nome: string, bairro: string) {
+  await delay(450);
+  const termo = nome.trim().toLocaleLowerCase("pt-BR");
+  const palavras = termo.split(/\s+/).filter((palavra) => palavra.length > 2);
+  const encontrados = catalogoOnline.filter((empresa) => {
+    const alvo = empresa.empresa.toLocaleLowerCase("pt-BR");
+    return alvo.includes(termo) || palavras.some((palavra) => alvo.includes(palavra));
+  });
+  const candidatos = encontrados.length ? encontrados : catalogoOnline.slice(0, 4);
+
+  return candidatos.slice(0, 5).map((empresa, index): EmpresaMapsResult => {
+    const local = bairro.trim() || "Campinas - SP";
+    const query = [empresa.empresa, empresa.endereco, local].join(", ");
+    return {
+      placeId: `mock-place-${index}-${empresa.empresa}`,
+      empresa: empresa.empresa,
+      endereco: empresa.endereco,
+      cidade: local,
+      telefone: empresa.telefone,
+      avaliacao: empresa.avaliacao,
+      googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+    };
+  });
 }
 
 export async function criarLead(
@@ -463,7 +500,15 @@ export async function gerarLeadsOnline(params: {
     contato: "Atendimento",
     decisor: "A identificar",
     email: "",
+    site: empresa.site,
+    instagram: empresa.instagram,
     avaliacaoGoogle: empresa.avaliacao,
+    totalAvaliacoes: empresa.totalAvaliacoes,
+    totalFotos: empresa.totalFotos,
+    posicionamentoGoogle: empresa.posicionamentoGoogle,
+    googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      `${empresa.empresa}, ${empresa.endereco}, ${params.local}`,
+    )}`,
     observacoes: `Avaliação Google: ${empresa.avaliacao} ★`,
     origem: "online" as const,
     modulo: "prospeccao" as const,
