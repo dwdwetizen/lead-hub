@@ -3,7 +3,6 @@ import { Building2, Mail, MapPin, MessageCircle, Pencil, Phone, Save, User, X } 
 import { toast } from "sonner";
 import type { Lead } from "@/types/lead";
 import { ResponsiveBottomSheet } from "@/components/shared/ResponsiveBottomSheet";
-import { AudioSummary } from "@/components/shared/AudioSummary";
 import { HistoryTimeline } from "@/components/shared/HistoryTimeline";
 import { UrgencyBadge } from "@/components/shared/UrgencyBadge";
 import { OriginBadge, StatusBadge } from "@/components/shared/StatusBadge";
@@ -429,10 +428,6 @@ function LeadDetails({ lead }: { lead: Lead }) {
         <p className="text-xs leading-relaxed text-muted-foreground">
           {lead.observacoes || lead.ultimaAnotacao || "Sem observações registradas."}
         </p>
-      </Secao>
-
-      <Secao titulo="Resumo da prospecção e IA">
-        <AudioSummary resumo={lead.resumoIA} />
       </Secao>
 
       <Secao titulo="Histórico completo">
