@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Archive, RotateCcw, ThumbsDown } from "lucide-react";
+import { Archive, CalendarPlus, RotateCcw, ThumbsDown } from "lucide-react";
 import { AppShell, SearchInput } from "@/components/layout/AppShell";
 import { FollowUpFilters, type FollowUpFiltro } from "@/components/followup/FollowUpFilters";
 import { FollowUpRow } from "@/components/followup/FollowUpRow";
@@ -16,7 +16,7 @@ import {
   agendarRetorno,
   arquivarLead,
   marcarReuniao,
-  registrarContato,
+  registrarNaoAtendeu,
   registrarSemInteresse,
   useLeads,
   usePerfil,
@@ -64,7 +64,6 @@ function FollowUpPage() {
   const matchFiltro = (l: Lead, f: FollowUpFiltro) => {
     const d = diffDays(l.proximaAcao);
     if (f === "todos") return true;
-    if (f === "sem_data") return d === null;
     if (d === null) return false;
     if (f === "atrasados") return d < 0;
     if (f === "hoje") return d === 0;
@@ -78,7 +77,6 @@ function FollowUpPage() {
     hoje: base.filter((l) => matchFiltro(l, "hoje")).length,
     amanha: base.filter((l) => matchFiltro(l, "amanha")).length,
     semana: base.filter((l) => matchFiltro(l, "semana")).length,
-    sem_data: base.filter((l) => matchFiltro(l, "sem_data")).length,
   } as Record<FollowUpFiltro, number>;
 
   const q = busca.trim().toLowerCase();
@@ -125,24 +123,49 @@ function FollowUpPage() {
                 ativo={detalhe?.id === lead.id}
                 onOpen={(lead) => setDetalheId(lead.id)}
                 onReuniao={setReuniaoLead}
-                onRegistrarContato={async (l, nota) => {
-                  await registrarContato(l.id, nota);
-                  toast.success("Contato registrado no histórico");
+                onNaoAtendeu={async (l) => {
+                  await registrarNaoAtendeu(l.id);
+                  toast.success("Tentativa registrada", {
+                    description: "Novo retorno agendado para amanhã.",
+                  });
                 }}
                 onRetornar={
                   <ReturnDatePopover
-                    confirmLabel="Reagendar retorno"
+                    confirmLabel="Retornar depois"
                     onConfirm={async (data, obs) => {
                       await agendarRetorno(lead.id, data, obs);
                       toast.success("Retorno reagendado");
                     }}
                     trigger={
                       <button className="inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-surface px-2.5 text-[12px] font-medium hover:bg-secondary">
-                        <RotateCcw className="size-3.5" /> Retornar novamente
+                        <RotateCcw className="size-3.5" /> Retornar depois
                       </button>
                     }
                   />
                 }
+                onAdicionarFollowUp={
+                  <ReturnDatePopover
+                    hint="Use após falar com o decisor para agendar o próximo contato."
+                    confirmLabel="Adicionar follow-up"
+                    onConfirm={async (data, obs) => {
+                      await agendarRetorno(lead.id, data, obs);
+                      toast.success("Novo follow-up adicionado");
+                    }}
+                    trigger={
+                      <button className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/8 px-2.5 text-[12px] font-medium text-primary hover:bg-primary/15">
+                        <CalendarPlus className="size-3.5" /> Adicionar follow-up
+                      </button>
+                    }
+                  />
+                }
+                onSemInteresse={async (l, nota) => {
+                  await registrarSemInteresse(l.id, nota);
+                  toast("Sem interesse registrado");
+                }}
+                onArquivar={async (l) => {
+                  await arquivarLead(l.id);
+                  toast.success("Lead arquivado");
+                }}
               />
             ))
           )}
