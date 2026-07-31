@@ -528,9 +528,40 @@ export const leadsIniciais: Lead[] = [
 ];
 
 /** Empresas simuladas usadas pela prospecção online (futuro Google Places). */
-export const catalogoOnline = [
-  { empresa: "Pizzaria Forno di Pietra", endereco: "Rua Amoreiras, 210", avaliacao: 4.6 },
-  { empresa: "Academia Corpo & Ritmo", endereco: "Av. Brasil, 1180", avaliacao: 4.2 },
+export interface EmpresaCatalogoOnline {
+  empresa: string;
+  endereco: string;
+  avaliacao: number;
+  telefone?: string;
+  site?: string;
+  instagram?: string;
+  totalAvaliacoes?: number;
+  totalFotos?: number;
+  posicionamentoGoogle?: number;
+}
+
+export const catalogoOnline: EmpresaCatalogoOnline[] = [
+  {
+    empresa: "Pizzaria Forno di Pietra",
+    endereco: "Rua Amoreiras, 210",
+    avaliacao: 4.6,
+    telefone: "(19) 3322-2100",
+    site: "fornodipietra.com.br",
+    instagram: "@fornodipietra",
+    totalAvaliacoes: 428,
+    totalFotos: 184,
+    posicionamentoGoogle: 3,
+  },
+  {
+    empresa: "Academia Corpo & Ritmo",
+    endereco: "Av. Brasil, 1180",
+    avaliacao: 4.2,
+    telefone: "(19) 3344-1180",
+    site: "corpoeritmo.com.br",
+    totalAvaliacoes: 193,
+    totalFotos: 72,
+    posicionamentoGoogle: 8,
+  },
   { empresa: "Salão Beleza Pura", endereco: "Rua XV de Novembro, 88", avaliacao: 4.8 },
   { empresa: "Serralheria Ferro Nobre", endereco: "Rua dos Metais, 305", avaliacao: 4.1 },
   { empresa: "Clínica Fisio Movimento", endereco: "Av. Andrade Neves, 640", avaliacao: 4.7 },
