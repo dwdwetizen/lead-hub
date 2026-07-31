@@ -1,16 +1,23 @@
 import {
   Archive,
+  BarChart3,
   CalendarPlus,
+  Camera,
+  Globe2,
+  Instagram,
+  MapPinned,
   MessageCircle,
   Phone,
   PhoneOff,
   RotateCcw,
+  Star,
   ThumbsDown,
 } from "lucide-react";
 import type { Lead } from "@/types/lead";
 import { UrgencyBadge } from "@/components/shared/UrgencyBadge";
 import { OriginBadge } from "@/components/shared/StatusBadge";
 import { ArchiveConfirmation } from "@/components/shared/ArchiveConfirmation";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDateTime } from "@/lib/date-utils";
 
 export function FollowUpRow({
@@ -99,6 +106,41 @@ export function FollowUpRow({
             <MessageCircle className="size-3.5" />
           </a>
         )}
+        <a
+          href={mapsUrl(lead)}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Abrir ${lead.empresa} no Google Maps`}
+          title="Abrir Google Maps"
+          className="inline-flex size-9 items-center justify-center rounded-md border border-primary/30 bg-primary/8 text-primary transition-colors hover:bg-primary/15"
+        >
+          <MapPinned className="size-3.5" />
+        </a>
+        {lead.site && (
+          <a
+            href={externalUrl(lead.site)}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Abrir site de ${lead.empresa}`}
+            title="Abrir site"
+            className="inline-flex size-9 items-center justify-center rounded-md border bg-surface text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <Globe2 className="size-3.5" />
+          </a>
+        )}
+        {lead.instagram && (
+          <a
+            href={instagramUrl(lead.instagram)}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Abrir Instagram de ${lead.empresa}`}
+            title="Abrir Instagram"
+            className="inline-flex size-9 items-center justify-center rounded-md border bg-surface text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <Instagram className="size-3.5" />
+          </a>
+        )}
+        <CompanySituation lead={lead} />
         <button
           type="button"
           onClick={() => onNaoAtendeu(lead)}
@@ -168,5 +210,92 @@ function whatsappUrl(value: string) {
   let digits = value.replace(/\D/g, "");
   if (digits.length === 10 || digits.length === 11) digits = `55${digits}`;
   return `https://wa.me/${digits}`;
+}
+
+function mapsUrl(lead: Lead) {
+  if (lead.googleMapsUrl) return externalUrl(lead.googleMapsUrl);
+  const query = [lead.empresa, lead.endereco, lead.cidade].filter(Boolean).join(", ");
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function externalUrl(value: string) {
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
+function instagramUrl(value: string) {
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://www.instagram.com/${value.replace(/^@/, "")}`;
+}
+
+function CompanySituation({ lead }: { lead: Lead }) {
+  const avaliacao =
+    lead.avaliacaoGoogle ??
+    Number(
+      lead.observacoes.match(/Avaliação Google:\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(",", "."),
+    );
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title="Ver situação da empresa"
+          aria-label={`Ver situação de ${lead.empresa}`}
+          className="inline-flex size-9 items-center justify-center rounded-md border bg-surface text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <BarChart3 className="size-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 space-y-3 p-3">
+        <div>
+          <p className="text-xs font-semibold">Situação no Google</p>
+          <p className="truncate text-[11px] text-muted-foreground">{lead.empresa}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <SituationItem
+            icon={Star}
+            label="Nota"
+            value={Number.isFinite(avaliacao) ? `${avaliacao.toFixed(1)} ★` : "Não informada"}
+          />
+          <SituationItem
+            icon={MessageCircle}
+            label="Avaliações"
+            value={lead.totalAvaliacoes?.toLocaleString("pt-BR") ?? "Não informado"}
+          />
+          <SituationItem
+            icon={Camera}
+            label="Fotos"
+            value={lead.totalFotos?.toLocaleString("pt-BR") ?? "Não informado"}
+          />
+          <SituationItem
+            icon={MapPinned}
+            label="Posição"
+            value={
+              lead.posicionamentoGoogle ? `${lead.posicionamentoGoogle}º no mapa` : "Não informada"
+            }
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function SituationItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-md border bg-surface-2 p-2">
+      <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <Icon className="size-3" /> {label}
+      </p>
+      <p className="mt-0.5 text-[11px] font-semibold">{value}</p>
+    </div>
+  );
 }
 
