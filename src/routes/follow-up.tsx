@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Archive, RotateCcw, ThumbsDown } from "lucide-react";
+import { Archive, CalendarPlus, RotateCcw, ThumbsDown } from "lucide-react";
 import { AppShell, SearchInput } from "@/components/layout/AppShell";
 import { FollowUpFilters, type FollowUpFiltro } from "@/components/followup/FollowUpFilters";
 import { FollowUpRow } from "@/components/followup/FollowUpRow";
@@ -16,7 +16,7 @@ import {
   agendarRetorno,
   arquivarLead,
   marcarReuniao,
-  registrarContato,
+  registrarNaoAtendeu,
   registrarSemInteresse,
   useLeads,
   usePerfil,
@@ -49,8 +49,9 @@ function FollowUpPage() {
   const perfil = usePerfil();
   const [filtro, setFiltro] = useState<FollowUpFiltro>("todos");
   const [busca, setBusca] = useState("");
-  const [detalhe, setDetalhe] = useState<Lead | null>(null);
+  const [detalheId, setDetalheId] = useState<string | null>(null);
   const [reuniaoLead, setReuniaoLead] = useState<Lead | null>(null);
+  const detalhe = leads.find((lead) => lead.id === detalheId) ?? null;
 
   const base = useMemo(
     () =>
@@ -63,7 +64,6 @@ function FollowUpPage() {
   const matchFiltro = (l: Lead, f: FollowUpFiltro) => {
     const d = diffDays(l.proximaAcao);
     if (f === "todos") return true;
-    if (f === "sem_data") return d === null;
     if (d === null) return false;
     if (f === "atrasados") return d < 0;
     if (f === "hoje") return d === 0;
@@ -77,7 +77,6 @@ function FollowUpPage() {
     hoje: base.filter((l) => matchFiltro(l, "hoje")).length,
     amanha: base.filter((l) => matchFiltro(l, "amanha")).length,
     semana: base.filter((l) => matchFiltro(l, "semana")).length,
-    sem_data: base.filter((l) => matchFiltro(l, "sem_data")).length,
   } as Record<FollowUpFiltro, number>;
 
   const q = busca.trim().toLowerCase();
@@ -85,8 +84,7 @@ function FollowUpPage() {
     .filter((l) => matchFiltro(l, filtro))
     .filter(
       (l) =>
-        !q ||
-        [l.empresa, l.decisor, l.telefone, l.whatsapp].join(" ").toLowerCase().includes(q),
+        !q || [l.empresa, l.decisor, l.telefone, l.whatsapp].join(" ").toLowerCase().includes(q),
     )
     .sort((a, b) => (diffDays(a.proximaAcao) ?? 99) - (diffDays(b.proximaAcao) ?? 99));
 
@@ -104,7 +102,11 @@ function FollowUpPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <FollowUpFilters value={filtro} onChange={setFiltro} counts={counts} />
           <div className="sm:ml-auto sm:w-64">
-            <SearchInput value={busca} onChange={setBusca} placeholder="Empresa, decisor ou telefone" />
+            <SearchInput
+              value={busca}
+              onChange={setBusca}
+              placeholder="Empresa, decisor ou telefone"
+            />
           </div>
         </div>
 
@@ -119,26 +121,51 @@ function FollowUpPage() {
                 key={lead.id}
                 lead={lead}
                 ativo={detalhe?.id === lead.id}
-                onOpen={setDetalhe}
+                onOpen={(lead) => setDetalheId(lead.id)}
                 onReuniao={setReuniaoLead}
-                onRegistrarContato={async (l) => {
-                  await registrarContato(l.id, "Contato realizado pelo colaborador.");
-                  toast.success("Contato registrado no histórico");
+                onNaoAtendeu={async (l) => {
+                  await registrarNaoAtendeu(l.id);
+                  toast.success("Tentativa registrada", {
+                    description: "Novo retorno agendado para amanhã.",
+                  });
                 }}
                 onRetornar={
                   <ReturnDatePopover
-                    confirmLabel="Reagendar retorno"
+                    confirmLabel="Retornar depois"
                     onConfirm={async (data, obs) => {
                       await agendarRetorno(lead.id, data, obs);
                       toast.success("Retorno reagendado");
                     }}
                     trigger={
                       <button className="inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-surface px-2.5 text-[12px] font-medium hover:bg-secondary">
-                        <RotateCcw className="size-3.5" /> Retornar novamente
+                        <RotateCcw className="size-3.5" /> Retornar depois
                       </button>
                     }
                   />
                 }
+                onAdicionarFollowUp={
+                  <ReturnDatePopover
+                    hint="Use após falar com o decisor para agendar o próximo contato."
+                    confirmLabel="Adicionar follow-up"
+                    onConfirm={async (data, obs) => {
+                      await agendarRetorno(lead.id, data, obs);
+                      toast.success("Novo follow-up adicionado");
+                    }}
+                    trigger={
+                      <button className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/8 px-2.5 text-[12px] font-medium text-primary hover:bg-primary/15">
+                        <CalendarPlus className="size-3.5" /> Adicionar follow-up
+                      </button>
+                    }
+                  />
+                }
+                onSemInteresse={async (l, nota) => {
+                  await registrarSemInteresse(l.id, nota);
+                  toast("Sem interesse registrado");
+                }}
+                onArquivar={async (l) => {
+                  await arquivarLead(l.id);
+                  toast.success("Lead arquivado");
+                }}
               />
             ))
           )}
@@ -148,7 +175,7 @@ function FollowUpPage() {
       <LeadDetailsPanel
         lead={detalhe}
         open={!!detalhe}
-        onOpenChange={(o) => !o && setDetalhe(null)}
+        onOpenChange={(o) => !o && setDetalheId(null)}
         footer={
           detalhe && (
             <div className="flex flex-wrap gap-2">
@@ -156,7 +183,7 @@ function FollowUpPage() {
                 className="h-10 flex-1"
                 onClick={() => {
                   setReuniaoLead(detalhe);
-                  setDetalhe(null);
+                  setDetalheId(null);
                 }}
               >
                 Reunião marcada
@@ -167,6 +194,7 @@ function FollowUpPage() {
                 withNote
                 onConfirm={async (nota) => {
                   await registrarSemInteresse(detalhe.id, nota);
+                  setDetalheId(null);
                   toast("Sem interesse registrado");
                 }}
                 trigger={
@@ -181,7 +209,7 @@ function FollowUpPage() {
                 confirmLabel="Arquivar"
                 onConfirm={async () => {
                   await arquivarLead(detalhe.id);
-                  setDetalhe(null);
+                  setDetalheId(null);
                   toast.success("Lead arquivado");
                 }}
                 trigger={
@@ -204,3 +232,4 @@ function FollowUpPage() {
     </AppShell>
   );
 }
+

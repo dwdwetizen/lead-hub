@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type FollowUpFiltro = "todos" | "atrasados" | "hoje" | "amanha" | "semana" | "sem_data";
+export type FollowUpFiltro = "todos" | "atrasados" | "hoje" | "amanha" | "semana";
 
 const filtros: { id: FollowUpFiltro; label: string }[] = [
   { id: "todos", label: "Todos" },
@@ -8,7 +8,6 @@ const filtros: { id: FollowUpFiltro; label: string }[] = [
   { id: "hoje", label: "Hoje" },
   { id: "amanha", label: "Amanhã" },
   { id: "semana", label: "Esta semana" },
-  { id: "sem_data", label: "Sem data" },
 ];
 
 export function FollowUpFilters({
@@ -47,3 +46,4 @@ export function FollowUpFilters({
     </div>
   );
 }
+

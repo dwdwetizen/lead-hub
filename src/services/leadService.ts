@@ -16,28 +16,142 @@ interface State {
   colaboradores: typeof colaboradores;
 }
 
-let state: State = {
+const STORAGE_KEY = "localway:lead-hub:v1";
+const STORAGE_VERSION = 1;
+
+const initialState: State = {
   leads: leadsIniciais,
   perfil: "gestao",
   colaboradores,
 };
 
+let state: State = initialState;
+let hydrated = false;
+let storageListenerActive = false;
 const listeners = new Set<() => void>();
 
+function isPerfil(value: unknown): value is Perfil {
+  return value === "gestao" || value === "colaborador";
+}
+
+function parseStoredState(raw: string | null): State | null {
+  if (!raw) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+
+    const record = parsed as Record<string, unknown>;
+    const candidate =
+      record.version === STORAGE_VERSION && record.state && typeof record.state === "object"
+        ? (record.state as Record<string, unknown>)
+        : record;
+
+    if (!Array.isArray(candidate.leads) || !isPerfil(candidate.perfil)) return null;
+
+    const leads = candidate.leads.filter((lead): lead is Lead =>
+      Boolean(
+        lead &&
+        typeof lead === "object" &&
+        typeof (lead as Lead).id === "string" &&
+        typeof (lead as Lead).empresa === "string" &&
+        Array.isArray((lead as Lead).historico),
+      ),
+    );
+
+    const persistedColaboradores = Array.isArray(candidate.colaboradores)
+      ? candidate.colaboradores.filter(
+          (colaborador): colaborador is (typeof colaboradores)[number] =>
+            Boolean(
+              colaborador &&
+              typeof colaborador === "object" &&
+              typeof (colaborador as (typeof colaboradores)[number]).id === "string" &&
+              typeof (colaborador as (typeof colaboradores)[number]).nome === "string" &&
+              typeof (colaborador as (typeof colaboradores)[number]).iniciais === "string" &&
+              typeof (colaborador as (typeof colaboradores)[number]).vendasConvertidas === "number",
+            ),
+        )
+      : [];
+
+    return {
+      leads,
+      perfil: candidate.perfil,
+      colaboradores: persistedColaboradores.length ? persistedColaboradores : colaboradores,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistState(nextState: State) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: STORAGE_VERSION, state: nextState }),
+    );
+  } catch {
+    // O app continua funcional mesmo se o navegador bloquear ou lotar o localStorage.
+  }
+}
+
+function hydrateFromStorage() {
+  if (hydrated || typeof window === "undefined") return;
+  hydrated = true;
+  try {
+    state = parseStoredState(window.localStorage.getItem(STORAGE_KEY)) ?? initialState;
+  } catch {
+    state = initialState;
+  }
+  syncSequence(state);
+}
+
+function notifyListeners() {
+  listeners.forEach((listener) => listener());
+}
+
 function setState(updater: (s: State) => State) {
+  hydrateFromStorage();
   state = updater(state);
-  listeners.forEach((l) => l());
+  persistState(state);
+  notifyListeners();
 }
 
 function subscribe(listener: () => void) {
+  hydrateFromStorage();
   listeners.add(listener);
-  return () => listeners.delete(listener);
+
+  if (typeof window !== "undefined" && !storageListenerActive) {
+    window.addEventListener("storage", handleStorageChange);
+    storageListenerActive = true;
+  }
+
+  return () => {
+    listeners.delete(listener);
+    if (typeof window !== "undefined" && storageListenerActive && listeners.size === 0) {
+      window.removeEventListener("storage", handleStorageChange);
+      storageListenerActive = false;
+    }
+  };
 }
 
 const getSnapshot = () => state;
+const getServerSnapshot = () => initialState;
+
+function handleStorageChange(event: StorageEvent) {
+  if (event.key !== STORAGE_KEY) return;
+
+  const nextState = parseStoredState(event.newValue) ?? initialState;
+  if (event.newValue === null || nextState !== state) {
+    state = nextState;
+    syncSequence(state);
+    notifyListeners();
+  }
+}
 
 export function useLocalWayState() {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 export function useLeads() {
@@ -57,6 +171,16 @@ export const usuario = usuarioAtual;
 const delay = (ms = 220) => new Promise((r) => setTimeout(r, ms));
 
 let seq = 1000;
+function syncSequence(currentState: State) {
+  for (const lead of currentState.leads) {
+    const leadSequence = Number.parseInt(lead.id.replace(/\D/g, ""), 10);
+    if (Number.isFinite(leadSequence)) seq = Math.max(seq, leadSequence);
+    for (const item of lead.historico) {
+      const historySequence = Number.parseInt(item.id.replace(/\D/g, ""), 10);
+      if (Number.isFinite(historySequence)) seq = Math.max(seq, historySequence);
+    }
+  }
+}
 const novoId = () => `l${++seq}`;
 
 function registrar(
@@ -90,10 +214,50 @@ export interface NovoLeadInput {
   contato: string;
   decisor: string;
   email: string;
+  googleMapsUrl?: string;
   observacoes: string;
 }
 
-export async function criarLead(input: NovoLeadInput, origem: "presencial" | "online" = "presencial") {
+export interface EmpresaMapsResult {
+  placeId: string;
+  empresa: string;
+  endereco: string;
+  cidade: string;
+  telefone?: string;
+  avaliacao?: number;
+  googleMapsUrl: string;
+}
+
+/** Busca simulada com a mesma assinatura esperada para a Google Places API. */
+export async function buscarEmpresasNoMaps(nome: string, bairro: string) {
+  await delay(450);
+  const termo = nome.trim().toLocaleLowerCase("pt-BR");
+  const palavras = termo.split(/\s+/).filter((palavra) => palavra.length > 2);
+  const encontrados = catalogoOnline.filter((empresa) => {
+    const alvo = empresa.empresa.toLocaleLowerCase("pt-BR");
+    return alvo.includes(termo) || palavras.some((palavra) => alvo.includes(palavra));
+  });
+  const candidatos = encontrados.length ? encontrados : catalogoOnline.slice(0, 4);
+
+  return candidatos.slice(0, 5).map((empresa, index): EmpresaMapsResult => {
+    const local = bairro.trim() || "Campinas - SP";
+    const query = [empresa.empresa, empresa.endereco, local].join(", ");
+    return {
+      placeId: `mock-place-${index}-${empresa.empresa}`,
+      empresa: empresa.empresa,
+      endereco: empresa.endereco,
+      cidade: local,
+      telefone: empresa.telefone,
+      avaliacao: empresa.avaliacao,
+      googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+    };
+  });
+}
+
+export async function criarLead(
+  input: NovoLeadInput,
+  origem: "presencial" | "online" = "presencial",
+) {
   await delay();
   const lead: Lead = {
     id: novoId(),
@@ -157,6 +321,26 @@ export async function agendarRetorno(id: string, dataISO: string, observacao?: s
       },
       "retorno",
       "Retorno agendado",
+      observacao,
+    ),
+  );
+}
+
+/** Agenda nova tentativa sem tirar o lead da Prospecção. */
+export async function agendarNovaTentativa(id: string, dataISO: string, observacao?: string) {
+  await delay(120);
+  return update(id, (lead) =>
+    registrar(
+      {
+        ...lead,
+        modulo: "prospeccao",
+        resultado: "retornar",
+        proximaAcao: dataISO,
+        proximaAcaoLabel: "Retornar contato",
+        ultimaAnotacao: observacao || lead.ultimaAnotacao,
+      },
+      "retorno",
+      "Nova tentativa agendada",
       observacao,
     ),
   );
@@ -285,6 +469,19 @@ export async function atualizarValor(id: string, valor: number) {
   return update(id, (lead) => ({ ...lead, valorEstimado: valor }));
 }
 
+/** Atualiza os campos editáveis do lead sem permitir a troca do id ou do histórico. */
+export async function atualizarLead(id: string, updates: Partial<Lead>) {
+  await delay(80);
+  return update(id, (lead) => {
+    const { id: _id, historico: _historico, ...campos } = updates;
+    return registrar(
+      { ...lead, ...campos, id: lead.id, historico: lead.historico },
+      "edicao",
+      "Informações atualizadas",
+    );
+  });
+}
+
 /** Simula a busca de empresas (futuramente Google Places API). */
 export async function gerarLeadsOnline(params: {
   segmento: string;
@@ -303,6 +500,15 @@ export async function gerarLeadsOnline(params: {
     contato: "Atendimento",
     decisor: "A identificar",
     email: "",
+    site: empresa.site,
+    instagram: empresa.instagram,
+    avaliacaoGoogle: empresa.avaliacao,
+    totalAvaliacoes: empresa.totalAvaliacoes,
+    totalFotos: empresa.totalFotos,
+    posicionamentoGoogle: empresa.posicionamentoGoogle,
+    googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      `${empresa.empresa}, ${empresa.endereco}, ${params.local}`,
+    )}`,
     observacoes: `Avaliação Google: ${empresa.avaliacao} ★`,
     origem: "online" as const,
     modulo: "prospeccao" as const,
@@ -344,3 +550,4 @@ export const ETAPAS: EtapaCRM[] = [
   "pago",
   "perdido",
 ];
+

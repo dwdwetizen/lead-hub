@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Archive,
+  CalendarPlus,
   ChevronDown,
   Clock3,
   MapPin,
@@ -23,6 +24,7 @@ interface Props {
   lead: Lead;
   onNaoAtendeu?: (lead: Lead) => void;
   onRetornar?: (lead: Lead, dataISO: string, obs?: string) => void;
+  onAdicionarFollowUp?: (lead: Lead, dataISO: string, obs?: string) => void;
   onSemInteresse?: (lead: Lead, obs?: string) => void;
   onArquivar?: (lead: Lead) => void;
   onRestaurar?: (lead: Lead) => void;
@@ -33,6 +35,7 @@ export function CompactLeadRow({
   lead,
   onNaoAtendeu,
   onRetornar,
+  onAdicionarFollowUp,
   onSemInteresse,
   onArquivar,
   onRestaurar,
@@ -71,7 +74,9 @@ export function CompactLeadRow({
                 <User className="size-3" />
                 {lead.decisor || lead.contato}
               </span>
-              <span className="hidden sm:inline">Último contato: {formatDate(lead.ultimoContato)}</span>
+              <span className="hidden sm:inline">
+                Último contato: {formatDate(lead.ultimoContato)}
+              </span>
             </div>
           </div>
         </button>
@@ -90,6 +95,28 @@ export function CompactLeadRow({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2 sm:pl-8">
+        {lead.telefone && (
+          <a
+            href={`tel:${lead.telefone.replace(/[^\d+]/g, "")}`}
+            aria-label={`Ligar para ${lead.empresa}`}
+            title="Ligar"
+            className="inline-flex size-9 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <Phone className="size-3.5" />
+          </a>
+        )}
+        {lead.whatsapp && (
+          <a
+            href={whatsappUrl(lead.whatsapp)}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Abrir WhatsApp de ${lead.empresa}`}
+            title="Abrir WhatsApp"
+            className="inline-flex size-9 items-center justify-center rounded-md border border-success/30 bg-success/8 text-success transition-colors hover:bg-success/15"
+          >
+            <MessageCircle className="size-3.5" />
+          </a>
+        )}
         {onNaoAtendeu && (
           <button
             type="button"
@@ -109,6 +136,21 @@ export function CompactLeadRow({
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-[12px] font-medium transition-colors hover:bg-secondary"
               >
                 <RotateCcw className="size-3.5" /> Retornar depois
+              </button>
+            }
+          />
+        )}
+        {onAdicionarFollowUp && (
+          <ReturnDatePopover
+            hint="Use após falar com o decisor. O lead será enviado ao Follow-up."
+            confirmLabel="Adicionar follow-up"
+            onConfirm={(data, obs) => onAdicionarFollowUp(lead, data, obs)}
+            trigger={
+              <button
+                type="button"
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/8 px-2.5 text-[12px] font-medium text-primary transition-colors hover:bg-primary/15"
+              >
+                <CalendarPlus className="size-3.5" /> Adicionar follow-up
               </button>
             }
           />
@@ -186,6 +228,12 @@ export function CompactLeadRow({
   );
 }
 
+function whatsappUrl(value: string) {
+  let digits = value.replace(/\D/g, "");
+  if (digits.length === 10 || digits.length === 11) digits = `55${digits}`;
+  return `https://wa.me/${digits}`;
+}
+
 function Info({
   icon: Icon,
   label,
@@ -203,3 +251,4 @@ function Info({
     </p>
   );
 }
+

@@ -48,10 +48,11 @@ function CrmPage() {
   const [colaborador, setColaborador] = useState("todos");
   const [periodo, setPeriodo] = useState("todos");
   const [etapaFiltro, setEtapaFiltro] = useState<"todas" | EtapaCRM>("todas");
-  const [detalhe, setDetalhe] = useState<Lead | null>(null);
+  const [detalheId, setDetalheId] = useState<string | null>(null);
   const [arrastando, setArrastando] = useState<Lead | null>(null);
   const [pagamento, setPagamento] = useState<Lead | null>(null);
   const [etapaMobile, setEtapaMobile] = useState<EtapaCRM>("reuniao_marcada");
+  const detalhe = leads.find((lead) => lead.id === detalheId) ?? null;
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -66,7 +67,9 @@ function CrmPage() {
         const dias = d === null ? 999 : Math.abs(d);
         return periodo === "7" ? dias <= 7 : dias <= 30;
       })
-      .filter((l) => !q || [l.empresa, l.decisor, l.responsavel].join(" ").toLowerCase().includes(q));
+      .filter(
+        (l) => !q || [l.empresa, l.decisor, l.responsavel].join(" ").toLowerCase().includes(q),
+      );
   }, [leads, perfil, colaborador, etapaFiltro, periodo, busca]);
 
   const ativos = lista.filter((l) => l.etapa !== "pago" && l.etapa !== "perdido");
@@ -90,6 +93,17 @@ function CrmPage() {
     toast.success(`${lead.empresa} → ${etapaLabel(etapa)}`);
   }
 
+  async function moverDoPainel(lead: Lead, etapa: EtapaCRM) {
+    if (!podeMover || lead.etapa === etapa) return;
+    if (etapa === "pago") {
+      setDetalheId(null);
+      setPagamento(lead);
+      return;
+    }
+    await moverEtapa(lead.id, etapa);
+    toast.success(`${lead.empresa} → ${etapaLabel(etapa)}`);
+  }
+
   return (
     <AppShell
       title="CRM"
@@ -105,7 +119,11 @@ function CrmPage() {
                 visao === v ? "bg-primary text-primary-foreground" : "text-muted-foreground",
               )}
             >
-              {v === "kanban" ? <KanbanSquare className="size-3.5" /> : <List className="size-3.5" />}
+              {v === "kanban" ? (
+                <KanbanSquare className="size-3.5" />
+              ) : (
+                <List className="size-3.5" />
+              )}
               <span className="hidden sm:inline">{v === "kanban" ? "Kanban" : "Lista"}</span>
             </button>
           ))}
@@ -132,7 +150,11 @@ function CrmPage() {
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="sm:w-64">
-            <SearchInput value={busca} onChange={setBusca} placeholder="Buscar empresa ou decisor" />
+            <SearchInput
+              value={busca}
+              onChange={setBusca}
+              placeholder="Buscar empresa ou decisor"
+            />
           </div>
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             <Select value={colaborador} onChange={setColaborador} disabled={!podeMover}>
@@ -183,7 +205,7 @@ function CrmPage() {
                 etapa={etapaMobile}
                 leads={lista.filter((l) => l.etapa === etapaMobile)}
                 podeMover={false}
-                onOpen={setDetalhe}
+                onOpen={(lead) => setDetalheId(lead.id)}
               />
             </div>
 
@@ -199,7 +221,7 @@ function CrmPage() {
                     etapa={etapa}
                     leads={lista.filter((l) => l.etapa === etapa)}
                     podeMover={podeMover}
-                    onOpen={setDetalhe}
+                    onOpen={(lead) => setDetalheId(lead.id)}
                     onDragStart={setArrastando}
                   />
                 </div>
@@ -211,7 +233,7 @@ function CrmPage() {
             {lista.map((l) => (
               <button
                 key={l.id}
-                onClick={() => setDetalhe(l)}
+                onClick={() => setDetalheId(l.id)}
                 className="flex w-full flex-col gap-1 border-b px-3 py-2 text-left last:border-b-0 hover:bg-surface-2 sm:flex-row sm:items-center sm:gap-3"
               >
                 <div className="min-w-0 flex-1">
@@ -250,7 +272,29 @@ function CrmPage() {
         />
       )}
 
-      <LeadDetailsPanel lead={detalhe} open={!!detalhe} onOpenChange={(o) => !o && setDetalhe(null)} />
+      <LeadDetailsPanel
+        lead={detalhe}
+        open={!!detalhe}
+        onOpenChange={(o) => !o && setDetalheId(null)}
+        footer={
+          detalhe &&
+          podeMover && (
+            <div className="flex items-center gap-2 md:hidden">
+              <span className="shrink-0 text-xs font-medium text-muted-foreground">Mover para</span>
+              <Select
+                value={detalhe.etapa ?? "reuniao_marcada"}
+                onChange={(etapa) => void moverDoPainel(detalhe, etapa as EtapaCRM)}
+              >
+                {ETAPAS.map((etapa) => (
+                  <option key={etapa} value={etapa}>
+                    {etapaLabel(etapa)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )
+        }
+      />
     </AppShell>
   );
 }
@@ -327,3 +371,4 @@ function Select({
     </select>
   );
 }
+
