@@ -289,6 +289,26 @@ export async function agendarRetorno(id: string, dataISO: string, observacao?: s
   );
 }
 
+/** Agenda nova tentativa sem tirar o lead da Prospecção. */
+export async function agendarNovaTentativa(id: string, dataISO: string, observacao?: string) {
+  await delay(120);
+  return update(id, (lead) =>
+    registrar(
+      {
+        ...lead,
+        modulo: "prospeccao",
+        resultado: "retornar",
+        proximaAcao: dataISO,
+        proximaAcaoLabel: "Retornar contato",
+        ultimaAnotacao: observacao || lead.ultimaAnotacao,
+      },
+      "retorno",
+      "Nova tentativa agendada",
+      observacao,
+    ),
+  );
+}
+
 export async function registrarSemInteresse(id: string, observacao?: string) {
   await delay(120);
   return update(id, (lead) =>
