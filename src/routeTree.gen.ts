@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FollowUpRouteImport } from './routes/follow-up'
 import { Route as ProspeccaoRouteImport } from './routes/prospeccao'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FollowUpRoute = FollowUpRouteImport.update({
+  id: '/follow-up',
+  path: '/follow-up',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProspeccaoRoute = ProspeccaoRouteImport.update({
@@ -25,27 +31,31 @@ const ProspeccaoRoute = ProspeccaoRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/follow-up': typeof FollowUpRoute
   '/prospeccao': typeof ProspeccaoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/follow-up': typeof FollowUpRoute
   '/prospeccao': typeof ProspeccaoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/follow-up': typeof FollowUpRoute
   '/prospeccao': typeof ProspeccaoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/prospeccao'
+  fullPaths: '/' | '/follow-up' | '/prospeccao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/prospeccao'
-  id: '__root__' | '/' | '/prospeccao'
+  to: '/' | '/follow-up' | '/prospeccao'
+  id: '__root__' | '/' | '/follow-up' | '/prospeccao'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  FollowUpRoute: typeof FollowUpRoute
   ProspeccaoRoute: typeof ProspeccaoRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/follow-up': {
+      id: '/follow-up'
+      path: '/follow-up'
+      fullPath: '/follow-up'
+      preLoaderRoute: typeof FollowUpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/prospeccao': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  FollowUpRoute: FollowUpRoute,
   ProspeccaoRoute: ProspeccaoRoute,
 }
 export const routeTree = rootRouteImport
