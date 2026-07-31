@@ -22,6 +22,7 @@ export function ArchiveConfirmation({
   description,
   confirmLabel = "Confirmar",
   withNote = false,
+  noteRequired = false,
   notePlaceholder = "Observação (opcional)",
   onConfirm,
 }: {
@@ -30,6 +31,7 @@ export function ArchiveConfirmation({
   description: string;
   confirmLabel?: string;
   withNote?: boolean;
+  noteRequired?: boolean;
   notePlaceholder?: string;
   onConfirm: (nota?: string) => void;
 }) {
@@ -55,6 +57,7 @@ export function ArchiveConfirmation({
           <AlertDialogCancel className="h-9">Cancelar</AlertDialogCancel>
           <AlertDialogAction
             className="h-9"
+            disabled={noteRequired && !nota.trim()}
             onClick={() => {
               onConfirm(nota.trim() || undefined);
               setNota("");
@@ -67,3 +70,4 @@ export function ArchiveConfirmation({
     </AlertDialog>
   );
 }
+
