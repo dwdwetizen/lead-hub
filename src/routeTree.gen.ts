@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CrmRouteImport } from './routes/crm'
 import { Route as FollowUpRouteImport } from './routes/follow-up'
 import { Route as ProspeccaoRouteImport } from './routes/prospeccao'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrmRoute = CrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FollowUpRoute = FollowUpRouteImport.update({
@@ -31,30 +37,34 @@ const ProspeccaoRoute = ProspeccaoRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/crm': typeof CrmRoute
   '/follow-up': typeof FollowUpRoute
   '/prospeccao': typeof ProspeccaoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/crm': typeof CrmRoute
   '/follow-up': typeof FollowUpRoute
   '/prospeccao': typeof ProspeccaoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/crm': typeof CrmRoute
   '/follow-up': typeof FollowUpRoute
   '/prospeccao': typeof ProspeccaoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/follow-up' | '/prospeccao'
+  fullPaths: '/' | '/crm' | '/follow-up' | '/prospeccao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/follow-up' | '/prospeccao'
-  id: '__root__' | '/' | '/follow-up' | '/prospeccao'
+  to: '/' | '/crm' | '/follow-up' | '/prospeccao'
+  id: '__root__' | '/' | '/crm' | '/follow-up' | '/prospeccao'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CrmRoute: typeof CrmRoute
   FollowUpRoute: typeof FollowUpRoute
   ProspeccaoRoute: typeof ProspeccaoRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crm': {
+      id: '/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof CrmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/follow-up': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CrmRoute: CrmRoute,
   FollowUpRoute: FollowUpRoute,
   ProspeccaoRoute: ProspeccaoRoute,
 }
