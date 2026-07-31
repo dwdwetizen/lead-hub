@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Lead, Reuniao } from "@/types/lead";
-import { ResponsiveBottomSheet } from "@/components/shared/ResponsiveBottomSheet";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +22,7 @@ const toInputDate = (d: Date) => {
 };
 
 const initialForm = (lead?: Lead | null): Reuniao => ({
-  data: toInputDate(addDays(new Date(), 2)),
+  data: toInputDate(addDays(new Date(), 1)),
   horario: "10:00",
   duracao: "45 min",
   pessoa: lead?.decisor ?? "",
@@ -23,7 +30,7 @@ const initialForm = (lead?: Lead | null): Reuniao => ({
   whatsapp: lead?.whatsapp ?? "",
   email: lead?.email ?? "",
   local: "Google Meet",
-  observacoes: "",
+  observacoes: lead?.ultimaAnotacao ?? "",
 });
 
 export function MeetingScheduler({
@@ -45,6 +52,18 @@ export function MeetingScheduler({
 
   if (!lead) return null;
   const currentLead = lead;
+  const datasRapidas = [0, 1, 2, 3, 4].map((dias) => {
+    const data = addDays(new Date(), dias);
+    const label =
+      dias === 0
+        ? "Hoje"
+        : dias === 1
+          ? "Amanhã"
+          : dias === 2
+            ? "Depois de amanhã"
+            : data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+    return { label, value: toInputDate(data) };
+  });
 
   const set = (k: keyof Reuniao, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -89,15 +108,85 @@ export function MeetingScheduler({
   }
 
   return (
-    <ResponsiveBottomSheet
-      open={open}
-      onOpenChange={(o) => {
-        onOpenChange(o);
-      }}
-      title="Marcar reunião"
-      description={lead.empresa}
-      footer={
-        <div className="flex gap-2">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] w-[calc(100%-1.5rem)] gap-0 overflow-y-auto p-0 sm:max-w-[560px]">
+        <DialogHeader className="border-b px-4 py-3 text-left">
+          <DialogTitle>Marcar reunião</DialogTitle>
+          <DialogDescription>{lead.empresa}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 px-4 py-3">
+          <div>
+            <Label className="text-[11px] text-muted-foreground">Escolha uma data</Label>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {datasRapidas.map((opcao) => (
+                <button
+                  key={opcao.value}
+                  type="button"
+                  onClick={() => set("data", opcao.value)}
+                  className={`min-h-9 rounded-md border px-2.5 text-[12px] font-medium transition-colors ${
+                    form.data === opcao.value
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "bg-surface hover:bg-secondary"
+                  }`}
+                >
+                  {opcao.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Campo label="Data">
+              <Input
+                type="date"
+                min={toInputDate(new Date())}
+                value={form.data}
+                onChange={(e) => set("data", e.target.value)}
+              />
+            </Campo>
+            <Campo label="Horário">
+              <Input
+                type="time"
+                value={form.horario}
+                onChange={(e) => set("horario", e.target.value)}
+              />
+            </Campo>
+            <Campo label="Duração">
+              <Input value={form.duracao} onChange={(e) => set("duracao", e.target.value)} />
+            </Campo>
+            <Campo label="Nome da pessoa">
+              <Input value={form.pessoa} onChange={(e) => set("pessoa", e.target.value)} />
+            </Campo>
+            <Campo label="Telefone">
+              <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} />
+            </Campo>
+            <Campo label="WhatsApp">
+              <Input value={form.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} />
+            </Campo>
+            <Campo label="E-mail" full>
+              <Input value={form.email} onChange={(e) => set("email", e.target.value)} />
+            </Campo>
+            <Campo label="Local ou link da reunião" full>
+              <Input value={form.local} onChange={(e) => set("local", e.target.value)} />
+            </Campo>
+            <Campo label="Observações" full>
+              <Textarea
+                className="min-h-[70px] resize-none"
+                placeholder="Informação importante do último follow-up"
+                value={form.observacoes}
+                onChange={(e) => set("observacoes", e.target.value)}
+              />
+            </Campo>
+          </div>
+          <p className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-[11px] leading-relaxed text-primary">
+            <Info className="mt-[1px] size-3.5 shrink-0" />
+            Os contatos do lead serão enviados com a reunião ao Google Agenda e o lead entrará no
+            CRM.
+          </p>
+        </div>
+
+        <DialogFooter className="flex-row gap-2 border-t bg-surface-2 px-4 py-3">
           <Button variant="outline" className="h-10 flex-1" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
@@ -105,56 +194,9 @@ export function MeetingScheduler({
             <CalendarCheck2 className="size-4" />{" "}
             {salvando ? "Confirmando..." : "Confirmar reunião"}
           </Button>
-        </div>
-      }
-    >
-      <div className="grid grid-cols-2 gap-3">
-        <Campo label="Data">
-          <Input
-            type="date"
-            min={toInputDate(new Date())}
-            value={form.data}
-            onChange={(e) => set("data", e.target.value)}
-          />
-        </Campo>
-        <Campo label="Horário">
-          <Input
-            type="time"
-            value={form.horario}
-            onChange={(e) => set("horario", e.target.value)}
-          />
-        </Campo>
-        <Campo label="Duração">
-          <Input value={form.duracao} onChange={(e) => set("duracao", e.target.value)} />
-        </Campo>
-        <Campo label="Nome da pessoa">
-          <Input value={form.pessoa} onChange={(e) => set("pessoa", e.target.value)} />
-        </Campo>
-        <Campo label="Telefone">
-          <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} />
-        </Campo>
-        <Campo label="WhatsApp">
-          <Input value={form.whatsapp} onChange={(e) => set("whatsapp", e.target.value)} />
-        </Campo>
-        <Campo label="E-mail" full>
-          <Input value={form.email} onChange={(e) => set("email", e.target.value)} />
-        </Campo>
-        <Campo label="Local ou link da reunião" full>
-          <Input value={form.local} onChange={(e) => set("local", e.target.value)} />
-        </Campo>
-        <Campo label="Observações" full>
-          <Textarea
-            className="min-h-[70px] resize-none"
-            value={form.observacoes}
-            onChange={(e) => set("observacoes", e.target.value)}
-          />
-        </Campo>
-      </div>
-      <p className="mt-3 flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-2.5 text-[11px] leading-relaxed text-primary">
-        <Info className="mt-[1px] size-3.5 shrink-0" />
-        Após confirmar, a reunião será enviada ao Google Agenda e o lead entrará no CRM.
-      </p>
-    </ResponsiveBottomSheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
