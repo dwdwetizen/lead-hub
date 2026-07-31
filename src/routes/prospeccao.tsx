@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Check, MapPin, Plus, Search, Star } from "lucide-react";
 import { AppShell, SearchInput } from "@/components/layout/AppShell";
 import { CompactLeadRow } from "@/components/prospeccao/CompactLeadRow";
 import { LeadDetailsPanel } from "@/components/shared/LeadDetailsPanel";
@@ -16,6 +16,7 @@ import {
   agendarRetorno,
   agendarNovaTentativa,
   arquivarLead,
+  buscarEmpresasNoMaps,
   criarLead,
   gerarLeadsOnline,
   registrarNaoAtendeu,
@@ -25,6 +26,7 @@ import {
   usePerfil,
   usuario,
   type NovoLeadInput,
+  type EmpresaMapsResult,
 } from "@/services/leadService";
 
 export const Route = createFileRoute("/prospeccao")({
@@ -70,6 +72,10 @@ function ProspeccaoPage() {
   const [busca, setBusca] = useState("");
   const [cadastroAberto, setCadastroAberto] = useState(false);
   const [form, setForm] = useState<NovoLeadInput>(vazio);
+  const [mapaBusca, setMapaBusca] = useState({ nome: "", bairro: "" });
+  const [resultadosMapa, setResultadosMapa] = useState<EmpresaMapsResult[]>([]);
+  const [buscandoMapa, setBuscandoMapa] = useState(false);
+  const [perfilMapaId, setPerfilMapaId] = useState<string | null>(null);
   const [detalheId, setDetalheId] = useState<string | null>(null);
   const [gerando, setGerando] = useState(false);
   const [online, setOnline] = useState({ segmento: "", local: "", quantidade: 5 });
@@ -138,9 +144,41 @@ function ProspeccaoPage() {
     }
     await criarLead(form);
     setForm(vazio);
+    setMapaBusca({ nome: "", bairro: "" });
+    setResultadosMapa([]);
+    setPerfilMapaId(null);
     setCadastroAberto(false);
     setAba("presencial");
     toast.success("Lead cadastrado com sucesso");
+  }
+
+  async function pesquisarNoMapa() {
+    if (!mapaBusca.nome.trim()) {
+      toast.error("Informe o nome da empresa");
+      return;
+    }
+    setBuscandoMapa(true);
+    try {
+      const resultados = await buscarEmpresasNoMaps(mapaBusca.nome, mapaBusca.bairro);
+      setResultadosMapa(resultados);
+      setPerfilMapaId(null);
+      if (!resultados.length) toast("Nenhum perfil encontrado no mapa");
+    } finally {
+      setBuscandoMapa(false);
+    }
+  }
+
+  function selecionarPerfilMapa(empresa: EmpresaMapsResult) {
+    setPerfilMapaId(empresa.placeId);
+    setForm((atual) => ({
+      ...atual,
+      empresa: empresa.empresa,
+      endereco: empresa.endereco,
+      cidade: empresa.cidade,
+      telefone: empresa.telefone || atual.telefone,
+      googleMapsUrl: empresa.googleMapsUrl,
+    }));
+    toast.success("Perfil do Google Maps vinculado");
   }
 
   async function gerar() {
@@ -163,7 +201,15 @@ function ProspeccaoPage() {
       title="Prospecção"
       subtitle="Leads presenciais e online em andamento"
       actions={
-        <Button size="sm" className="h-9" onClick={() => setCadastroAberto(true)}>
+        <Button
+          size="sm"
+          className="h-9"
+          onClick={() => {
+            setCadastroAberto(true);
+            setResultadosMapa([]);
+            setPerfilMapaId(null);
+          }}
+        >
           <Plus className="size-4" /> <span className="hidden sm:inline">Cadastrar lead</span>
         </Button>
       }
@@ -292,6 +338,72 @@ function ProspeccaoPage() {
           </div>
         }
       >
+        <div className="mb-4 space-y-2 rounded-lg border bg-surface-2 p-3">
+          <div>
+            <p className="flex items-center gap-1.5 text-xs font-semibold">
+              <MapPin className="size-3.5 text-primary" /> Localizar no Google Maps
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Pesquise pelo nome e, se necessário, informe o bairro.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <Input
+              value={mapaBusca.nome}
+              onChange={(e) => setMapaBusca((atual) => ({ ...atual, nome: e.target.value }))}
+              onKeyDown={(e) => e.key === "Enter" && void pesquisarNoMapa()}
+              placeholder="Nome da empresa"
+            />
+            <Input
+              value={mapaBusca.bairro}
+              onChange={(e) => setMapaBusca((atual) => ({ ...atual, bairro: e.target.value }))}
+              onKeyDown={(e) => e.key === "Enter" && void pesquisarNoMapa()}
+              placeholder="Bairro (opcional)"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={pesquisarNoMapa}
+              disabled={buscandoMapa}
+            >
+              <Search className="size-4" /> {buscandoMapa ? "Buscando..." : "Buscar"}
+            </Button>
+          </div>
+          {resultadosMapa.length > 0 && (
+            <div className="max-h-44 space-y-1 overflow-y-auto pt-1">
+              {resultadosMapa.map((empresa) => {
+                const selecionada = perfilMapaId === empresa.placeId;
+                return (
+                  <button
+                    key={empresa.placeId}
+                    type="button"
+                    onClick={() => selecionarPerfilMapa(empresa)}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md border bg-surface p-2 text-left transition-colors hover:bg-secondary",
+                      selecionada && "border-primary bg-primary/5",
+                    )}
+                  >
+                    <MapPin className="size-3.5 shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-semibold">
+                        {empresa.empresa}
+                      </span>
+                      <span className="block truncate text-[10px] text-muted-foreground">
+                        {empresa.endereco} • {empresa.cidade}
+                      </span>
+                    </span>
+                    {empresa.avaliacao && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium">
+                        <Star className="size-3 fill-warning text-warning" /> {empresa.avaliacao}
+                      </span>
+                    )}
+                    {selecionada && <Check className="size-4 shrink-0 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           {(
             [
@@ -309,7 +421,7 @@ function ProspeccaoPage() {
             <div key={campo} className={full ? "col-span-2 space-y-1" : "space-y-1"}>
               <Label className="text-[11px] text-muted-foreground">{label}</Label>
               <Input
-                value={form[campo]}
+                value={form[campo] ?? ""}
                 onChange={(e) => setForm((f) => ({ ...f, [campo]: e.target.value }))}
               />
             </div>
