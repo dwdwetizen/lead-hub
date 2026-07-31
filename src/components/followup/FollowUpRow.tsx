@@ -116,7 +116,7 @@ export function FollowUpRow({
         >
           <MapPinned className="size-3.5" />
         </a>
-        {lead.site && (
+        {lead.origem === "online" && lead.site && (
           <a
             href={externalUrl(lead.site)}
             target="_blank"
@@ -128,7 +128,7 @@ export function FollowUpRow({
             <Globe2 className="size-3.5" />
           </a>
         )}
-        {lead.instagram && (
+        {lead.origem === "online" && lead.instagram && (
           <a
             href={instagramUrl(lead.instagram)}
             target="_blank"
@@ -140,7 +140,7 @@ export function FollowUpRow({
             <Instagram className="size-3.5" />
           </a>
         )}
-        <CompanySituation lead={lead} />
+        {lead.origem === "online" && <CompanySituation lead={lead} />}
         <button
           type="button"
           onClick={() => onNaoAtendeu(lead)}
