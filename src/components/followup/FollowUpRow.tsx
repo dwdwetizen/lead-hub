@@ -1,4 +1,4 @@
-import { AudioLines, CalendarPlus, MessageCircle, Phone, RotateCcw } from "lucide-react";
+import { CalendarPlus, MessageCircle, Phone, RotateCcw } from "lucide-react";
 import type { Lead } from "@/types/lead";
 import { UrgencyBadge } from "@/components/shared/UrgencyBadge";
 import { OriginBadge } from "@/components/shared/StatusBadge";
@@ -33,11 +33,6 @@ export function FollowUpRow({
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="truncate text-sm font-semibold">{lead.empresa}</span>
             <OriginBadge origem={lead.origem} />
-            {lead.resumoIA && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-primary/25 bg-primary/8 px-1.5 py-0.5 text-[11px] font-medium text-primary">
-                <AudioLines className="size-3" /> Áudio + IA
-              </span>
-            )}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
             <span>{lead.decisor}</span>
