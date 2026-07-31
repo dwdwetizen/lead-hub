@@ -463,6 +463,7 @@ export async function gerarLeadsOnline(params: {
     contato: "Atendimento",
     decisor: "A identificar",
     email: "",
+    avaliacaoGoogle: empresa.avaliacao,
     observacoes: `Avaliação Google: ${empresa.avaliacao} ★`,
     origem: "online" as const,
     modulo: "prospeccao" as const,
