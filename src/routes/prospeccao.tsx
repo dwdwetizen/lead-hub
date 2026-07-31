@@ -69,9 +69,10 @@ function ProspeccaoPage() {
   const [busca, setBusca] = useState("");
   const [cadastroAberto, setCadastroAberto] = useState(false);
   const [form, setForm] = useState<NovoLeadInput>(vazio);
-  const [detalhe, setDetalhe] = useState<Lead | null>(null);
+  const [detalheId, setDetalheId] = useState<string | null>(null);
   const [gerando, setGerando] = useState(false);
   const [online, setOnline] = useState({ segmento: "", local: "", quantidade: 5 });
+  const detalhe = leads.find((lead) => lead.id === detalheId) ?? null;
 
   const visiveis = useMemo(
     () => (perfil === "gestao" ? leads : leads.filter((l) => l.responsavel === usuario.nome)),
@@ -92,7 +93,9 @@ function ProspeccaoPage() {
   const presenciais = filtrar(
     visiveis.filter((l) => l.modulo === "prospeccao" && l.origem === "presencial"),
   );
-  const onlines = filtrar(visiveis.filter((l) => l.modulo === "prospeccao" && l.origem === "online"));
+  const onlines = filtrar(
+    visiveis.filter((l) => l.modulo === "prospeccao" && l.origem === "online"),
+  );
   const arquivados = filtrar(visiveis.filter((l) => l.modulo === "arquivado"));
 
   const abas: { id: Aba; label: string; count: number }[] = [
@@ -112,13 +115,15 @@ function ProspeccaoPage() {
     },
     onSemInteresse: async (lead: Lead, obs?: string) => {
       await registrarSemInteresse(lead.id, obs);
+      setDetalheId(null);
       toast("Resultado registrado: sem interesse", { description: lead.empresa });
     },
     onArquivar: async (lead: Lead) => {
       await arquivarLead(lead.id);
+      setDetalheId(null);
       toast.success("Lead arquivado", { description: "Disponível na aba Arquivados." });
     },
-    onOpen: (lead: Lead) => setDetalhe(lead),
+    onOpen: (lead: Lead) => setDetalheId(lead.id),
   };
 
   async function salvarLead() {
@@ -183,7 +188,11 @@ function ProspeccaoPage() {
             </button>
           ))}
           <div className="ml-auto hidden w-64 sm:block">
-            <SearchInput value={busca} onChange={setBusca} placeholder="Buscar empresa, contato..." />
+            <SearchInput
+              value={busca}
+              onChange={setBusca}
+              placeholder="Buscar empresa, contato..."
+            />
           </div>
         </div>
         <div className="sm:hidden">
@@ -216,7 +225,10 @@ function ProspeccaoPage() {
                 max={10}
                 value={online.quantidade}
                 onChange={(e) =>
-                  setOnline((o) => ({ ...o, quantidade: Math.min(10, Number(e.target.value) || 1) }))
+                  setOnline((o) => ({
+                    ...o,
+                    quantidade: Math.min(10, Number(e.target.value) || 1),
+                  }))
                 }
               />
             </div>
@@ -262,7 +274,11 @@ function ProspeccaoPage() {
         description="Prospecção presencial"
         footer={
           <div className="flex gap-2">
-            <Button variant="outline" className="h-10 flex-1" onClick={() => setCadastroAberto(false)}>
+            <Button
+              variant="outline"
+              className="h-10 flex-1"
+              onClick={() => setCadastroAberto(false)}
+            >
               Cancelar
             </Button>
             <Button className="h-10 flex-1" onClick={salvarLead}>
@@ -307,8 +323,9 @@ function ProspeccaoPage() {
       <LeadDetailsPanel
         lead={detalhe}
         open={!!detalhe}
-        onOpenChange={(o) => !o && setDetalhe(null)}
+        onOpenChange={(o) => !o && setDetalheId(null)}
       />
     </AppShell>
   );
 }
+
